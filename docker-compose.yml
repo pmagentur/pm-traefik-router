@@ -1,0 +1,38 @@
+services:
+  traefik:
+    image: pmdocker.azurecr.io/pm-traefik-router
+    container_name: traefik
+    restart: always
+    command:
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.azureresolver.acme.dnschallenge=true"
+      - "--certificatesresolvers.azureresolver.acme.dnschallenge.provider=azure"
+      - "--certificatesresolvers.azureresolver.acme.email=everything@pmagentur.com"
+      - "--certificatesresolvers.azureresolver.acme.storage=/acme/acme.json"
+      - "--certificatesresolvers.azureresolver.acme.caServer=https://acme-v02.api.letsencrypt.org/directory"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-ui.rule=Host(`traefik.site.pm-projects.de`)" # traefik web UI
+      - "traefik.http.services.traefik-ui.loadbalancer.server.port=8080"
+      - "traefik.http.routers.traefik-ui.entrypoints=websecure"
+      - "traefik.http.routers.traefik-ui.tls.certresolver=azureresolver"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "traefik-acme:/acme"
+    networks:
+      - traefik-network 
+
+volumes:
+  traefik-acme:
+    driver: local
+
+networks:
+  traefik-network:
+    external: true
